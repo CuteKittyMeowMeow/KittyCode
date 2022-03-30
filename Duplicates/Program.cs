@@ -1,9 +1,7 @@
 using System.Numerics;
-using BenchmarkDotNet.Running;
-using ReferenceTest;
 
 
-namespace ReferenceTest
+namespace Duplicates
 {
     public class Program
     {
@@ -65,58 +63,62 @@ namespace ReferenceTest
                 Console.WriteLine($"Исключение, лол: {ex.Message}");
             }
 
-            //получили массивы
+            //Создали массивы
             int[][] mainArray = CreateArray(rank);
             ShowMe(mainArray);
 
-            //Сюда пишем дубликаты
+            //Сюда будем писать дубликаты
             List<int> duplicates = new List<int>();
 
             // массив индексов всех массивов
             int[] index = new int[rank];
             // в каждом индексе будет храниться номер последнего элемента
             for (int i = 0; i < rank; i++)
-                index[i] = mainArray[i].Length-1;
+                index[i] = mainArray[i].Length - 1;
 
 
-            //Сравниваем элементы нулевого массива с элементами остальных массивов
-            //Начинаем с конца. Индекс < 0 будет сведетельствовать о конце массива
-            //
-            //сравниваем нулевой и i массивы.
-            for (int i = 1; i < rank; i++)
+            //Сравниваем элементы (начиная с концы) нулевого массива с элементами остальных массивов
+            // Индекс < 0 будет сведетельствовать о конце массива
+            
+            // флаг о том, что какой-то из массивов окончился
+            bool moreArrayLeft = true;
+            // Номер массива, с которым производится сравнение
+            int arrayNumber = 1;
+            do
             {
                 //Уменьшаем на один индекс того массива, который больше
-                //и начинаем цикл заново, присваивая i=1
-                if (mainArray[0][index[0]] > mainArray[i][index[i]])
+                //Если нулевой массив больше, то возвращаемся к сравнению с первым массивом
+                if (mainArray[0][index[0]] > mainArray[arrayNumber][index[arrayNumber]])
                 {
                     index[0]--;
                     if (index[0] < 0) //если индекс <0, то массив закончился и выходим из цикла
-                        return;
-                    i = 1;
+                        moreArrayLeft = false;
+                    arrayNumber = 1;
                 }
-                else if (mainArray[0][index[0]] < mainArray[i][index[i]])
+                //Если ненулевой массив больше, то продолжаем сравнение с того же массива
+                else if (mainArray[0][index[0]] < mainArray[arrayNumber][index[arrayNumber]])
                 {
-                    index[i]--;
-                    if (index[i] < 0) //если индекс <0, то массив закончился и выходим из цикла
-                        return;
-                    i = 1;
+                    index[arrayNumber]--;
+                    if (index[arrayNumber] < 0) //если индекс <0, то массив закончился и выходим из цикла
+                        moreArrayLeft = false;
                 }
-                // Если до этого момента условие ни разу не выполнилось, то это дубликат
-                // уменьшаем все индексы на 1
-                else if (i == rank - 1)
+                //Если дошли до сюда, значит элементы равны. Переходим на следующий массив
+                else if (arrayNumber < rank - 1)
+                { arrayNumber++; }
+                // Если это был последний массив, то мы нашли дубликат. Уменьшаем все индексы и начинаем заново
+                else if (arrayNumber == rank - 1)
                 {
                     duplicates.Add(mainArray[0][index[0]]);
-                    bool endOfArray = false;
-                    for (int j = 0; j < rank; j++)
+                    
+                    for (int i = 0; i < rank; i++)
                     {
-                        index[j]--;
-                        if (index[j] < 0) //если индекс <0, то массив закончился и выходим из цикла
-                            endOfArray = true;
+                        index[i]--;
+                        if (index[i] < 0) //если индекс <0, то массив закончился и выходим из цикла
+                            moreArrayLeft = false;
                     }
-                    if (endOfArray) return;
-                    i = 1;
+                    arrayNumber = 1;
                 }
-            }
+            } while (moreArrayLeft);
 
             duplicates = duplicates.Distinct().ToList();
 
