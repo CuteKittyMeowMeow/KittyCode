@@ -7,18 +7,18 @@ namespace ReferenceTest
 {
     public class Program
     {
-
-        public static int[][] CreateArray()
+        //Создаем, заполняем и упорядочиваем массив массивов ранга rank.
+        public static int[][] CreateArray(int rank, int sizeLower = 10, int sizeUpper = 100, int rangeLower = -100, int rangeUpper = 100)
         {
             Random random = new Random();
 
-            int[][] result = new int[3][];
-            for (int i = 0; i < 3; i++)
-                result[i] = new int[random.Next(10, 100)];
+            int[][] result = new int[rank][];
+            for (int i = 0; i < rank; i++)
+                result[i] = new int[random.Next(sizeLower, sizeUpper)];
 
             foreach (int[] row in result)
                 for (int number = 0; number < row.Length; number++)
-                    row[number] = random.Next(-100, 100);
+                    row[number] = random.Next(rangeLower, rangeUpper);
 
             foreach (int[] row in result)
                 Array.Sort(row);
@@ -26,10 +26,12 @@ namespace ReferenceTest
             return result;
         }
 
+        //Выводит в консоль все элементы массива
         public static void ShowMe(int[][] array)
         {
             foreach (int[] row in array)
-            { Console.WriteLine("Array:"); 
+            {
+                Console.WriteLine("Array:");
                 foreach (int number in row)
                     Console.Write($"{number}, ");
 
@@ -37,6 +39,7 @@ namespace ReferenceTest
             }
         }
 
+        //Выводит в консоль все элементы списка
         public static void ShowMe(List<int> list)
         {
             Console.WriteLine("Duplicates:");
@@ -46,42 +49,73 @@ namespace ReferenceTest
             Console.WriteLine();
         }
 
-
-        //  Я сначала хотел сделать влоб через Array.Contains. Но потом подумал, что зря что ли массивы упорядоченные?
-        //
-        //  В итоге я взял первые элементы из каждого массива и сравнивал их между собой.Если какой-то из них был
-        // меньше другого - я брал следующий элемент этого массива. И так до тех пор, пока номер элемента
-        // не превысит размер своего массива. 
-        //  Ну а если ни один из элементов не меньше другого - значит они все равны и это число я
-        // добавляю в список дубликатов, и беру следующий элемент в каждом из массивов.
-        //
-        //  Единственное что, я потом получившийся список прогнал через List.Distinct(), на
-        // случай, если все массивы будут заполнены одним и тем же числом.
-
-
-
         public static void Main(string[] args)
         {
 
-            int[][] mainArray = CreateArray();
+            Console.WriteLine("Введите количество массивов");
+            int rank;
+
+            try
+            {
+                rank = int.Parse(Console.ReadLine());
+            }
+            catch (Exception ex)
+            {
+                rank = 3;
+                Console.WriteLine($"Исключение, лол: {ex.Message}");
+            }
+
+            //получили массивы
+            int[][] mainArray = CreateArray(rank);
             ShowMe(mainArray);
 
+            //Сюда пишем дубликаты
             List<int> duplicates = new List<int>();
 
-            for (int i1 = 0, i2 = 0, i3 = 0;
-                 i1 < mainArray[0].Length && i2 < mainArray[1].Length && i3 < mainArray[2].Length;)
-            {
-                if (mainArray[0][i1] < mainArray[1][i2] || mainArray[0][i1] < mainArray[2][i3]) i1++;
-                else if (mainArray[1][i2] < mainArray[0][i1] || mainArray[1][i2] < mainArray[2][i3]) i2++;
-                else if (mainArray[2][i3] < mainArray[0][i1] || mainArray[2][i3] < mainArray[1][i2]) i3++;
-                else
-                {
-                    duplicates.Add(mainArray[0][i1]);
-                    i1++;
-                    i2++;
-                    i3++;
-                }
+            // массив индексов всех массивов
+            int[] index = new int[rank];
+            // в каждом индексе будет храниться номер последнего элемента
+            for (int i = 0; i < rank; i++)
+                index[i] = mainArray[i].Length-1;
 
+
+            //Сравниваем элементы нулевого массива с элементами остальных массивов
+            //Начинаем с конца. Индекс < 0 будет сведетельствовать о конце массива
+            //
+            //сравниваем нулевой и i массивы.
+            for (int i = 1; i < rank; i++)
+            {
+                //Уменьшаем на один индекс того массива, который больше
+                //и начинаем цикл заново, присваивая i=1
+                if (mainArray[0][index[0]] > mainArray[i][index[i]])
+                {
+                    index[0]--;
+                    if (index[0] < 0) //если индекс <0, то массив закончился и выходим из цикла
+                        return;
+                    i = 1;
+                }
+                else if (mainArray[0][index[0]] < mainArray[i][index[i]])
+                {
+                    index[i]--;
+                    if (index[i] < 0) //если индекс <0, то массив закончился и выходим из цикла
+                        return;
+                    i = 1;
+                }
+                // Если до этого момента условие ни разу не выполнилось, то это дубликат
+                // уменьшаем все индексы на 1
+                else if (i == rank - 1)
+                {
+                    duplicates.Add(mainArray[0][index[0]]);
+                    bool endOfArray = false;
+                    for (int j = 0; j < rank; j++)
+                    {
+                        index[j]--;
+                        if (index[j] < 0) //если индекс <0, то массив закончился и выходим из цикла
+                            endOfArray = true;
+                    }
+                    if (endOfArray) return;
+                    i = 1;
+                }
             }
 
             duplicates = duplicates.Distinct().ToList();
@@ -89,8 +123,6 @@ namespace ReferenceTest
             ShowMe(duplicates);
 
             Console.ReadLine();
-            
-
         }
 
     }
